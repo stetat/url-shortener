@@ -6,6 +6,11 @@ from models import redirect_db, User
 from dependencies import encode_link, SessionDep, write_notis
 from config import ALPHABET, BASE_URL
 from .users import get_current_user
+import redis
+
+r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+#r.bf().reserve("original_urls", 0.01, 100000000)
+
 
 links_tags_metadata = [
     {
@@ -32,30 +37,29 @@ async def shorten_link(
     background_tasks: BackgroundTasks,
 ):
     
-    exists = session.exec(select(redirect_db).where(redirect_db.original_url==original_url)).first()
-
-    if exists:
-        background_tasks.add_task(write_notis, "no email", f"{original_url} is already shortened as {BASE_URL+exists.short_code}")
-        return {
-        "original_url": original_url,
-        "short_url": f"http://127.0.0.1:8080/{exists.short_code}"
-    }
-
-    
     if not original_url.startswith(('http://', 'https://')):
         raise HTTPException(status_code=400, detail="Invalid URL")
 
+    
+    if r.bf().exists("original_urls", original_url):
+        exists = session.exec(select(redirect_db).where(redirect_db.original_url==original_url)).first()
+        if exists:
+            return {
+                "original_url": original_url,
+                "short_url": f"http://127.0.0.1:8080/{exists.short_code}"
+            }
     
     new_pair = redirect_db(short_code="", original_url=original_url)
     session.add(new_pair)
     session.commit()
     session.refresh(new_pair)
+    r.bf().add("original_urls", original_url)
 
     generated_code = encode_link(new_pair.id)
     new_pair.short_code = generated_code
     session.commit()
 
-    background_tasks.add_task(write_notis, "no email", f"{original_url} has been shortened into {BASE_URL+generated_code}")
+    background_tasks.add_task(write_notis, "no email", f"{original_url} has been shortened into {BASE_URL+generated_code}\n\n")
     return {
         "original_url": original_url,
         "short_url": f"http://127.0.0.1:8080/{generated_code}"
