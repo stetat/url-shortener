@@ -50,7 +50,6 @@ def create_app() -> FastAPI:
         openapi_tags=tags_metadata,
         )
 
-    app.mount("/web", StaticFiles(directory="webpage", html=True), name="webpage")
     app.include_router(users.router)
     app.include_router(links.router)
 

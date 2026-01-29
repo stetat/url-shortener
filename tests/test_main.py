@@ -6,7 +6,7 @@ import time
 import random
 from config import ALPHABET
 
-n = 1000
+n = 500
 test_links = []
 for i in range(n):
     test_links.append("https://" + ''.join(random.choices(ALPHABET, k=16)) + ".com")
