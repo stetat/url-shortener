@@ -1,0 +1,28 @@
+
+  <div class="main-box">
+    <div class="title">
+      Paste your link. Get a short one quickly.
+    </div>
+    <div class="form">
+      <form [class.shake-error]="isShaking()" [formGroup]="urlForm" (ngSubmit)="onSubmit()">
+        <input type="text" formControlName="originalUrl" placeholder="Enter a URL">
+
+        @if (showError()) {
+          <p class="error">Please enter a valid url</p>
+        }
+
+        @if (showServerError()) {
+          <p class="error">Server is down</p>
+        }
+
+        <button type="submit" >Shorten</button>
+
+        @if (shortenedUrl()) {
+          <div class="response">
+            Shortened url: {{shortenedUrl()}}
+          </div>
+        }
+      </form>
+    </div>
+  </div>
+
